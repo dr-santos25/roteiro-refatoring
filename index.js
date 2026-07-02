@@ -1,8 +1,6 @@
 const { readFileSync } = require('fs');
 
 function gerarFaturaStr (fatura, pecas) {
-    let totalFatura = 0;
-    let creditos = 0;
     let faturaStr = `Fatura ${fatura.cliente}\n`;
   
     function getPeca(apre) {
@@ -32,7 +30,6 @@ function gerarFaturaStr (fatura, pecas) {
         return total;
     }
 
-    // FUNÇÃO EXTRAÍDA PARA CRÉDITOS (PASSO 3)
     function calcularCredito(apre) {
         let creditos = 0;
         creditos += Math.max(apre.audiencia - 30, 0);
@@ -41,24 +38,39 @@ function gerarFaturaStr (fatura, pecas) {
         return creditos;
     }
 
-    // FUNÇÃO EXTRAÍDA PARA FORMATAÇÃO DE MOEDA (PASSO 3)
     function formatarMoeda(valor) {
         return new Intl.NumberFormat("pt-BR", {
             style: "currency", currency: "BRL",
             minimumFractionDigits: 2
         }).format(valor / 100);
     }
+
+    // FUNÇÕES EXTRAÍDAS PARA TOTAIS (PASSO 4)
+    function calcularTotalFatura() {
+        let total = 0;
+        for (let apre of fatura.apresentacoes) {
+            total += calcularTotalApresentacao(apre);
+        }
+        return total;
+    }
+
+    function calcularTotalCreditos() {
+        let totalCreditos = 0;
+        for (let apre of fatura.apresentacoes) {
+            totalCreditos += calcularCredito(apre);
+        }
+        return totalCreditos;
+    }
   
+    // O LOOP AGORA SÓ MONTA AS LINHAS
     for (let apre of fatura.apresentacoes) {
         let total = calcularTotalApresentacao(apre);
-  
-        creditos += calcularCredito(apre); // CHAMANDO A FUNÇÃO
-  
         faturaStr += `  ${getPeca(apre).nome}: ${formatarMoeda(total)} (${apre.audiencia} assentos)\n`;
-        totalFatura += total;
     }
-    faturaStr += `Valor total: ${formatarMoeda(totalFatura)}\n`;
-    faturaStr += `Créditos acumulados: ${creditos} \n`;
+
+    // USANDO AS NOVAS FUNÇÕES PARA OS TOTAIS
+    faturaStr += `Valor total: ${formatarMoeda(calcularTotalFatura())}\n`;
+    faturaStr += `Créditos acumulados: ${calcularTotalCreditos()} \n`;
     return faturaStr;
 }
 
